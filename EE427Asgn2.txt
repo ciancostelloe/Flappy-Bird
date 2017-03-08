@@ -1,0 +1,40 @@
+; viciLab EE427Asgn2.txt
+; for Single Cycle Computer (SCC), Fearghal Morgan
+;
+; =================================
+; Load the timer TMRL register with value FFFAh
+; Load the timer TMRH register with value FFFFh
+; Load these values in the timer load registers too
+; Enable 
+;   timer auto-reload 
+;   timer interrupt (timer interrupts execute ISR2 (Interrupt Service Routine 2 at address 74h / 116d) 
+;   global interrupts
+;   timer
+; Toggle LED(3) in the timer ISR2 and return from interrupt.
+; =================================
+
+; Objective: Write a SCC assembly program to perform the above. Refer to SCC diagram and instruction set.
+; Use viciLab SCC project to compile, execute and test the assembly program on rmeote (or local FPGA hardware)
+; Run the program and step (down arrow) to observe and verify time interrupt execution.
+; Use a minimum number of instructions, though as many different instruction types as possible.
+; Highest marks will be awarded to the smallest program and the most different instruction types.
+; Submit 
+;   Screen capture of IDE (program, LED widgets and SFR(0) status widgets at bottom of IDE)
+;   Screen capture and explanation of the stack behaviour 
+;
+; Assume:
+; clk freq=25MHz, period=40ns 
+; Max program memory size is 128 instructions 
+; Any instructions not included here will be NOP (FE00h) instructions in the program memory;
+;         Main program   :0h-5bh  / 0-91d   / 0000000-10101011b  
+;         ISRs: 12 instructions max per ISR, including RETI instruction
+;            ISR0(inPort(0)):5ch-67h / 92d-103d / 01011100-01100111b  
+;            ISR1(inPort(1)):68h-73h / 104d-115d / 01101000-01110011b  
+;            ISR2 (timer)   :74h-7fh / 116d-127d / 01110100-01111111b 
+;         constant ISRAddArray : ISRArray := (X"74", X"68", X"5c"); -- VHDL ISR 2, 1, 0 pointers 
+; Data and stack memory size is 32. Default Stack Pointer (SP) is address 008  
+; Always end the main program with the END 'end program' instruction to prevent inadvertent instruction execution.
+;
+;   No of instructions: ________
+;   No of different instruction types: ___________
+; Assembly Instr       Expected result

@@ -1,0 +1,39 @@
+; viciLab EE427Asgn1.txt
+; for Single Cycle Computer (SCC), Fearghal Morgan
+;
+; =================================
+; Load register R3 with value F104h
+; =================================
+;
+; Objective: Write a SCC assembly program to perform the above.
+; Refer to SCC diagram and SCC instruction set.
+; Use viciLab SCC project to compile, execute and test the assembly program on remote (or local FPGA hardware)
+; Run the program and step (viciLab down arrow) to observe and verify time interrupt execution.
+; Use a minimum number of instructions, though as many different instruction types as possible.
+; Highest marks will be awarded to the smallest program and the most different instruction types.
+; Submit 
+;   Screen capture of IDE (program, with LED widgets)  
+;
+; Use a minimum number of instructions, though as many different instruction types as possible.
+; Highest marks will be awarded to the smallest program and the most different instruction types.
+; Submit 
+;   Screen capture of IDE (program and 7-segment display widgets)
+;   No of instructions: ________
+;   No of different instruction types: ___________
+;
+; Assume: 
+; clk freq=25MHz, period=40ns 
+; Max program memory size is 128 instructions 
+; Any instructions not included here will be NOP (FE00h) instructions in the program memory;
+;         Main program   :0h-5bh  / 0-91d   / 0000000-10101011b  
+;         ISRs: 12 instructions max per ISR, including RETI instruction
+;            ISR0(inPort(0)):5ch-67h / 92d-103d / 01011100-01100111b  
+;            ISR1(inPort(1)):68h-73h / 104d-115d / 01101000-01110011b  
+;            ISR2 (timer)   :74h-7fh / 116d-127d / 01110100-01111111b 
+;         constant ISRAddArray : ISRArray := (X"74", X"68", X"5c"); -- VHDL ISR 2, 1, 0 pointers 
+; Data and stack memory size is 32. Default Stack Pointer (SP) is address 008  
+; Always end the main program with the END 'end program' instruction to prevent inadvertent instruction execution.
+;
+;   No of instructions: ________
+;   No of different instruction types: ___________
+; Assembly Instr       Expected result

@@ -1,0 +1,161 @@
+; viciLab SCCExampleInstructionsTest.txt for Single Cycle Computer (SCC), Fearghal Morgan
+; Fearghal Morgan, (c) viciLogic, Feb 2016, updated Dec 2016
+; Objective: Example program to verify each SCC instruction, not a practical SCC program.
+; Refer to SCC diagram and SCC instruction set.
+; Use viciLab SCC project to compile, execute and test the assembly program on remote (or local FPGA hardware)
+; Run the program and step (viciLab down arrow) to observe and verify time interrupt execution.
+;
+; Assume: 
+; clk freq=25MHz, period=40ns 
+; Max program memory size is 128 instructions 
+; Any instructions not included here will be NOP (FE00h) instructions in the program memory;
+;         Main program   :0h-5bh  / 0-91d   / 0000000-10101011b  
+;         ISRs: 12 instructions max per ISR, including RETI instruction
+;            ISR0(inPort(0)):5ch-67h / 92d-103d / 01011100-01100111b  
+;            ISR1(inPort(1)):68h-73h / 104d-115d / 01101000-01110011b  
+;            ISR2 (timer)   :74h-7fh / 116d-127d / 01110100-01111111b 
+;         constant ISRAddArray : ISRArray := (X"74", X"68", X"5c"); -- VHDL ISR 2, 1, 0 pointers 
+; Data and stack memory size is 32. Default Stack Pointer (SP) is address 008  
+; Always end the main program with the END 'end program' instruction to prevent inadvertent instruction execution.
+;
+;
+; Assembly Instr      Instruction (binary) (hex)  Description 
+INV R0, R1          ; 0  0011011 000 001 000,  0   => X"3608h", R1 initially 0, so R0=FFFFh  
+CLRBR R0, 11        ; 1  1111010 000 001 011,  1   => X"F40Bh", R0(bit 11) -> 0 so R0=F7FFh
+MOVRR R1, R0        ; 2  0000001 001 000 000,  2   => X"0240h", R1 = F7FFh
+MOVRSFR SFR5, R0    ; 3  0000010 101 000 000,  3   => X"0540h", SFR5 = F7FFh, SFR(5)(7:0) connected to LED(7:0)=FFh, SFR(5)(11:8) connected to DP(3:0)=7h (0111b),  
+SHRA R0, 11         ; 4  1010000 000 001 011,  4   => X"A00Bh", Shift R0 right arithmetic, shift 11 bits, shifted in bits from right = most significant (sign) bit (MSB) (=1b) , R0 = FFFEh
+SHLA R0, 14         ; 5  1010001 000 001 110,  5   => X"A20Eh", Shift R0 left arithmetic, shift 14 bits, shifted in bits from left = 0b , R0 = 8000h
+SETBR R0, 11        ; 6  1111000 000 001 011,  6   => X"F00Bh", R0(11)=0 so R0=8800h
+SHRL R0, 15         ; 7  1010010 000 001 111,  7   => X"A40Fh", Shift R0 right logical, shift 15 bits, shifted in bits from right = 0b, R0 = 0001h
+SHLL R0, 14         ; 8  1010011 000 001 110,  8   => X"A60Eh", Shift R0 left logical, shift 14 bits, shifted in bits from left = 0b , R0 = 4000h
+ROTL R0, 2          ; 9  1010101 000 000 010,  9   => X"AA02h", Rotate R0 left no carry, shift 2 bits, and bit 15 shifted in to bit 0 etc, R0 = 0001h
+ROTR R0, 2          ; 10 1010100 000 000 010,  10  => X"A802h", Rotate R0 right no carry, shift 2 bits, and bit 0 shifted in to bit 15 etc, R0 = 4000h
+INVBR R0, 15        ; 11 1111100 000 001 111,  11  => X"F80Fh", invert R0(15)=1 so R0=C000h
+INVBR R0, 0         ; 12 1111100 000 000 000,  12  => X"F800h", invert R0(0)=1 so R0=C001h
+AND R2, R0, R1      ; 13 0011000 010 000 001,  13  => X"3081h", and R0 (C001h) with R1 (F7FFh), write to R2, value is C001h
+XOR R3, R0, R1      ; 14 0011010 011 000 001,  14  => X"34C1h", xor R0 (C001h, 1100 0000 0000 0001) with R1 (F7FFh, 1111 0111 1111 1111), write to R3=0011 0111 1111 1110b = 37FEh
+OR R4, R3, R1       ; 15 0011001 100 011 001,  15  => X"3319h", or R3 (97FEh) with R1 (F7FFh), write to R4 = F7FFh
+MOVSFRR R2, SFR5    ; 16 0000011 010 101 000,  16  => X"06A8h", R2=SFR5=F7FFh
+INV R5, R5          ; 17 0011011 101 101 000,  17  => X"3768h", R5 = FFFFh
+CLRBR R5, 11        ; 18 1111010 101 001 011,  18  => X"F54Bh", R5=F7FFh
+INV R5, R5          ; 19 0011011 101 101 000,  19  => X"3768h", R5 = 0800h
+ADD R6, R0, R0      ; 20 0010000 110 000 000,  20  => X"2180h", R0 (C001h) + R0, put in R6 = (1)8002h. Need to handle carry here. To be done in SCC (FM)
+SUB R7, R0, R6      ; 21 0010101 111 000 110,  21  => X"2BC6h", R0 (C001h) - R6 (8002h), put in R7 = 3FFFh
+MULT                ; 22 0010110 000 000 000,  22  => X"2C00h", multiply R7 (3FFFh), R6 (8002h), answer is 32 bit value 1FFFFFFEh
+SETBR R1, 11        ; 23 1111000 001 001 011,  23  => X"F04Bh", R1(11)=0 so R1=FFFFh
+MOVRSFR SFR7, R1    ; 24 0000010 111 001 000,  24  => X"05C8h", SFR7 = FFFFh (TMRH_LdVal) 
+MOVRSFR SFR6, R1    ; 25 0000010 110 001 000,  25  => X"0588h", SFR6 = FFFFh (TMRL_LdVal) 
+CLRBSFR SFR6, 0     ; 26 1111011 110 000 000,  26  => X"F780h", SFR6 = FFFEh (TMRL_LdVal), 32-bit timer reload value is FFFFFFFEh.  
+CLRBSFR SFR6, 2     ; 27 1111011 110 000 010,  27  => X"F782h", SFR6 = FFFAh (TMRL_LdVal), 32-bit timer reload value is FFFFFFFAh.  
+MOVRSFR SFR2, R1    ; 28 0000010 010 001 000,  28  => X"0488h", SFR2 = FFFFh (TMRH) 
+MOVRSFR SFR1, R1    ; 29 0000010 001 001 000,  29  => X"0448h", SFR1 = FFFFh (TMRL) 
+CLRBSFR SFR1, 0     ; 30 1111011 001 000 000,  30  => X"F640h", SFR1 = FFFEh (TMRH), 32-bit timer value is FFFFFFFEh.  
+CLRBSFR SFR1, 2     ; 31 1111011 001 000 010,  31  => X"F642h", SFR1 = FFFAh (TMRH), 32-bit timer value is FFFFFFFAh. Will generate interrupt when value is FFFFFFFFh.
+                                                             
+SETBSFR SFR0, 5     ; 32 1111001 000 000 101,  32  => X"F205h", SFR0(5) = 1, set timer auto reload
+SETBSFR SFR0, 3     ; 33 1111001 000 000 011,  33  => X"F203h", SFR0(3) = 1, set timer interrupt enable
+SETBSFR SFR0, 0     ; 34 1111001 000 000 000,  34  => X"F200h", SFR0(0) = 1, set global interrupt
+SETBSFR SFR0, 4     ; 35 1111001 000 000 100,  35  => X"F204h", SFR0(4) = 1, set enable timer
+ADDINV R3, R3, R0   ; 36 0010001 011 011 000,  36  => X"22D8h", R3 (37FEh) + not R0 (C001h -> 3FFEh), write to R3 = 77FCh 
+DEC R3, R3          ; 37 0010010 011 011 000,  37  => X"24D8h", R3 (3FFEh) -> FFFEh 
+INC R3, R3          ; 38 0010011 011 011 000,  38  => X"26D8h", inc R3 to FFFFh 
+                                                             
+ADDINC R3, R7, R3   ; 39 0010100 011 111 011,  39  => X"28FBh", R7 (3FFFh) + R3 (77FC) + 1, put in R3 = B7FCh
+SUB R3, R2, R3      ; 40 0010101 011 010 011,  40  => X"2AD3h", R2 (F7FFh) - R3 (B7FCh) = 4003h
+ADDI R3, R3, 7      ; 41 0010111 011 011 111,  41  => X"2EDFh", R3+7, to R3 = 400Ah 
+CLRBR R3, 14        ; 42 1111010 011 001 110,  42  => X"F4CEh", R3=000Ah    Timer interrupt occurs here, so do not complete this instr, stack stores address 42d, 2ah)
+MOVBAMEM @R3, R7    ; 43 0110010 000 011 111,  43  => X"641Fh", move R7 (3FFFh) to mem address in R3 (000Ah) 
+MOVAMEMR R2, @R3    ; 44 0110011 010 011 000,  44  => X"6698h", move data in (mem address in R3) to R2 (3FFFh)
+NOP                 ; 45 1111111 000 000 000,  45  => X"FE00h", no register changes (other than timer), PC increments
+MOVMULTH R3         ; 46 0000111 011 000 000,  46  => X"0EC0h", mov multiplier output (31:16) to R3
+MOVMULTL R2         ; 47 0000110 010 000 000,  47  => X"0C80h", mov multiplier output (15:0) to R2
+CALL 36h            ; 48 1000000 000 110 110,  48  => X"8036h", call to routine at address 36h (54d / 0110110b)
+LOOP1: MOVINH R2    ; 49 0001000 010 000 000,  49  => X"1080h", move inPort to R2 
+JZ R2, LOOP1        ; 50 0101011 111 010 111,  50  => X"57D7h", loop to previous instruction (-1) 
+LOOP2: MOVINL R4    ; 51 0001001 100 000 000,  51  => X"1300h", move inPort to R4 
+JNZ R4, -1          ; 52 0101111 111 100 111,  52  => X"5FE7h", loop to previous instruction (-1) 
+END                 ; 53 0000000 000 000 000,  53  => X"0000h", end program, PC does not change 
+                                                             
+ORG 54              ; subroutine start address               
+INVBSFR SFR4, 0     ; 54 1111101 100 000 000,  54  => X"FB00h", invert SFR4(0) 
+RET                 ; 55 1001000 000 000 000,  55  => X"9000h", return to main program, address 49
+                                                             
+NOP                 ; 56 1111111 000 000 000,  56  => X"FE00h", no register changes, PC increments
+NOP                 ; 57 1111111 000 000 000,  57  => X"FE00h", no register changes, PC increments
+NOP                 ; 58 1111111 000 000 000,  58  => X"FE00h", no register changes, PC increments
+NOP                 ; 59 1111111 000 000 000,  59  => X"FE00h", no register changes, PC increments
+NOP                 ; 60 1111111 000 000 000,  60  => X"FE00h", no register changes, PC increments
+NOP                 ; 61 1111111 000 000 000,  61  => X"FE00h", no register changes, PC increments
+NOP                 ; 62 1111111 000 000 000,  62  => X"FE00h", no register changes, PC increments
+NOP                 ; 63 1111111 000 000 000,  63  => X"FE00h", no register changes, PC increments
+NOP                 ; 64 1111111 000 000 000,  64  => X"FE00h", no register changes, PC increments
+NOP                 ; 65 1111111 000 000 000,  65  => X"FE00h", no register changes, PC increments
+NOP                 ; 66 1111111 000 000 000,  66  => X"FE00h", no register changes, PC increments
+NOP                 ; 67 1111111 000 000 000,  67  => X"FE00h", no register changes, PC increments
+NOP                 ; 68 1111111 000 000 000,  68  => X"FE00h", no register changes, PC increments
+NOP                 ; 69 1111111 000 000 000,  69  => X"FE00h", no register changes, PC increments
+NOP                 ; 70 1111111 000 000 000,  70  => X"FE00h", no register changes, PC increments
+NOP                 ; 71 1111111 000 000 000,  71  => X"FE00h", no register changes, PC increments
+NOP                 ; 72 1111111 000 000 000,  72  => X"FE00h", no register changes, PC increments
+NOP                 ; 73 1111111 000 000 000,  73  => X"FE00h", no register changes, PC increments
+NOP                 ; 74 1111111 000 000 000,  74  => X"FE00h", no register changes, PC increments
+NOP                 ; 75 1111111 000 000 000,  75  => X"FE00h", no register changes, PC increments
+NOP                 ; 76 1111111 000 000 000,  76  => X"FE00h", no register changes, PC increments
+NOP                 ; 77 1111111 000 000 000,  77  => X"FE00h", no register changes, PC increments
+NOP                 ; 78 1111111 000 000 000,  78  => X"FE00h", no register changes, PC increments
+NOP                 ; 79 1111111 000 000 000,  79  => X"FE00h", no register changes, PC increments
+NOP                 ; 80 1111111 000 000 000,  80  => X"FE00h", no register changes, PC increments
+NOP                 ; 81 1111111 000 000 000,  81  => X"FE00h", no register changes, PC increments
+NOP                 ; 82 1111111 000 000 000,  82  => X"FE00h", no register changes, PC increments
+NOP                 ; 83 1111111 000 000 000,  83  => X"FE00h", no register changes, PC increments
+NOP                 ; 84 1111111 000 000 000,  84  => X"FE00h", no register changes, PC increments
+NOP                 ; 85 1111111 000 000 000,  85  => X"FE00h", no register changes, PC increments
+NOP                 ; 86 1111111 000 000 000,  86  => X"FE00h", no register changes, PC increments
+NOP                 ; 87 1111111 000 000 000,  87  => X"FE00h", no register changes, PC increments
+NOP                 ; 88 1111111 000 000 000,  88  => X"FE00h", no register changes, PC increments
+NOP                 ; 89 1111111 000 000 000,  89  => X"FE00h", no register changes, PC increments
+NOP                 ; 90 1111111 000 000 000,  90  => X"FE00h", no register changes, PC increments
+NOP                 ; 91 1111111 000 000 000,  91  => X"FE00h", no register changes, PC increments
+                                                             
+ORG 92              ; ISR(0)  5ch, 92d                       
+RETI                ; 92 0010000 000 000 000,  92  => X"2000h", Return from interrupt
+NOP                 ; 93 1111111 000 000 000,  93  => X"FE00h", no register changes, PC increments
+NOP                 ; 94 1111111 000 000 000,  94  => X"FE00h", no register changes, PC increments
+NOP                 ; 95 1111111 000 000 000,  95  => X"FE00h", no register changes, PC increments
+NOP                 ; 96 1111111 000 000 000,  96  => X"FE00h", no register changes, PC increments
+NOP                 ; 97 1111111 000 000 000,  97  => X"FE00h", no register changes, PC increments
+NOP                 ; 98 1111111 000 000 000,  98  => X"FE00h", no register changes, PC increments
+NOP                 ; 99 1111111 000 000 000,  99  => X"FE00h", no register changes, PC increments
+NOP                 ; 100 1111111 000 000 000, 100  => X"FE00h", no register changes, PC increments
+NOP                 ; 101 1111111 000 000 000, 101  => X"FE00h", no register changes, PC increments
+NOP                 ; 102 1111111 000 000 000, 102  => X"FE00h", no register changes, PC increments
+NOP                 ; 103 1111111 000 000 000, 103  => X"FE00h", no register changes, PC increments
+                                                             
+ORG 104             ; ISR(1) 68h, 104d                       
+RETI                ; 104 0010000 000 000 000, 104  => X"2000h", Return from interrupt
+NOP                 ; 105 1111111 000 000 000, 105  => X"FE00h", no register changes, PC increments
+NOP                 ; 106 1111111 000 000 000, 106  => X"FE00h", no register changes, PC increments
+NOP                 ; 107 1111111 000 000 000, 107  => X"FE00h", no register changes, PC increments
+NOP                 ; 108 1111111 000 000 000, 108  => X"FE00h", no register changes, PC increments
+NOP                 ; 109 1111111 000 000 000, 109  => X"FE00h", no register changes, PC increments
+NOP                 ; 110 1111111 000 000 000, 110  => X"FE00h", no register changes, PC increments
+NOP                 ; 111 1111111 000 000 000, 111  => X"FE00h", no register changes, PC increments
+NOP                 ; 112 1111111 000 000 000, 112  => X"FE00h", no register changes, PC increments
+NOP                 ; 113 1111111 000 000 000, 113  => X"FE00h", no register changes, PC increments
+NOP                 ; 114 1111111 000 000 000, 114  => X"FE00h", no register changes, PC increments
+NOP                 ; 115 1111111 000 000 000, 115  => X"FE00h", no register changes, PC increments
+                                                             
+ORG 116             ; Timer ISR 74h 116d                    
+CLRBSFR SFR0, 3     ; 116 1111011 000 000 011, 116  => X"F603h", SFR0(3) = 0, clear timer interrupt enable, SFR(3) changes from 39h to 31h
+INVBSFR SFR5, 0     ; 117 1111101 101 000 000, 117  => X"FB40h", invert SFR5(0)  f7ffh -> f7feh
+PUSH R1             ; 118 0110000 000 000 001, 118  => X"6001h", Push R1 (ffff) to stack (address 9), SP incr to Ah
+POP R2              ; 119 0110001 010 000 000, 119  => X"6280h", Pop stack (ffff) to R2, SP decrements to 9 
+RETI                ; 120 0110100 000 000 000, 120  => X"6800h", Return from interrupt, PC -> 2ah, SP decrements from 9 to 8. Stack should still hold values 2ah (addr 8) and ffff(addr 9)
+NOP                 ; 121 1111111 000 000 000, 121  => X"FE00h", no register changes, PC increments
+NOP                 ; 122 1111111 000 000 000, 122  => X"FE00h", no register changes, PC increments
+NOP                 ; 123 1111111 000 000 000, 123  => X"FE00h", no register changes, PC increments
+NOP                 ; 124 1111111 000 000 000, 124  => X"FE00h", no register changes, PC increments
+NOP                 ; 125 1111111 000 000 000, 125  => X"FE00h", no register changes, PC increments
+NOP                 ; 126 1111111 000 000 000, 126  => X"FE00h", no register changes, PC increments
+NOP                 ; 127 1111111 000 000 000, 127  => X"FE00h", no register changes, PC increments

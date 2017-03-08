@@ -1,0 +1,56 @@
+; SCC 60 minute timer, 00:00-59min:59sec
+; Fearghal Morgan, viciLogic, 2017
+;
+; Description
+; Update 60 minute counter every second
+; Use SCC 32-bit timer and interrupt (ISR2) to generate the 1 second delay
+; Clk f = 25MHz, clk T=40ns, typical instructions T=1 clk cycles (40ns)
+; 25,000,000 x 40ns = 1 second
+; FFFFFFFFh-17D7840h = FE8287BFh timer load value, FE82h (1111111010000010)
+; Use labels to help structure program
+; Efficient programs will receive highest marks
+; Include clear comments 
+
+;== Main program start. Assume all registers are clear on program start ====================================
+main: CALL 20       ; CALL setupTimer1Sec. Use this for debug to shorten the timer interrupt cycle
+; main: CALL 40     ; CALL setupTimer16Cycle
+END		    ; end main program
+
+
+; Setup 32-bit timer with auto-reload, for a repeating 1 sec interrupt =====================================
+setupTimer1Sec: ORG 20  
+RET
+
+
+; Setup 32-bit timer with auto-reload, for a repeating 16 cycle interrupt. Use to debug ====================
+setupTimer16Cycle: ORG 40
+RET
+
+
+; Update min10:min1:sec10:sec1 time subroutine =============================================================
+updateTime: ORG 50
+; May wish to PUSH registers to the stack for use in this subroutine, and POP (in reverse order) before RET
+RET
+
+
+; Update SFR4 (7-segment display) with current time ========================================================
+update7Seg: ORG 75 
+; may wish to PUSH registers to the stack for use in this subroutine, and POP (in reverse order) before RET
+RET
+
+
+; ====== Interrupt Service Routine 0 (inPort(0) interrupt) start label ====================================
+ISR0: ORG 92 ; Not used. Program decimal address. ISR(0)  5ch, 92d. Could delete this if ISR0 is not used                       
+RETI         ; return from interrupt
+
+
+; ====== Interrupt Service Routine 1 (inPort(1) interrupt) start label ===================================
+ISR1: ORG 104 ; Not used. Program decimal address. ISR(1) 68h, 104d. Could delete this if ISR0 is not used                                          
+RETI          ; return from interrupt
+
+
+; ====== Interrupt Service Routine 2 (32-bit timer interrupt) start label ================================
+ISR2: ORG 116 ; On interrupt, update time and update 7-segment display
+CALL 50       ; call function updateTime. Illustrates the use of the CALL (for updateTime subroutine execution)
+; etc
+RETI        ; return from interrupt
